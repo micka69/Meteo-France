@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Météo France Détaillée par Région</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        :root {
+            --primary-color: #ffffff;
+            --secondary-color: #ffffff;
+            --background-color: #001233;
+            --card-background: rgba(255, 255, 255, 0.05);
+            --text-color: #ffffff;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(58, 134, 255, 0.1) 0%, rgba(58, 134, 255, 0) 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 110, 0.1) 0%, rgba(255, 0, 110, 0) 20%);
+            background-attachment: fixed;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 1.8em;
+            margin: 15px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            letter-spacing: 1px;
+        }
+
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .region-weather {
+            background: var(--card-background);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.15);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .region-weather:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px 0 rgba(31, 38, 135, 0.2);
+        }
+
+        .region-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--secondary-color);
+            padding-bottom: 5px;
+        }
+
+        .weather-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .weather-icon {
+            font-size: 2.5em;
+            text-shadow: 0 0 5px rgba(255,255,255,0.3);
+        }
+
+        .temperature {
+            font-size: 2em;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .description {
+            font-style: italic;
+            color: #e0e0e0;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.85em;
+        }
+
+        .weather-detail {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 5px;
+            border-radius: 6px;
+            transition: background 0.3s ease;
+        }
+
+        .weather-detail:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .detail-icon {
+            margin-right: 5px;
+            font-size: 1.1em;
+        }
+
+        #last-updated {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8em;
+            color: #b0c4de;
+        }
+
+        @media (max-width: 480px) {
+            .weather-grid {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            .region-weather {
+                padding: 12px;
+            }
+            .weather-details {
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Météo France</h1>
+    <div id="weather-container" class="weather-grid"></div>
+    <div id="last-updated"></div>
+
+    <script>
+        const regions = [
+            { name: "Île-de-France", lat: 48.8566, lon: 2.3522 },
+            { name: "Auvergne-Rhône-Alpes", lat: 45.7578, lon: 4.8320 },
+            { name: "Hauts-de-France", lat: 50.6292, lon: 3.0573 },
+            { name: "Provence-Alpes-Côte d'Azur", lat: 43.2965, lon: 5.3698 },
+            { name: "Grand Est", lat: 48.5734, lon: 7.7521 },
+            { name: "Occitanie", lat: 43.6047, lon: 1.4442 },
+            { name: "Normandie", lat: 49.1859, lon: 0.3590 },
+            { name: "Nouvelle-Aquitaine", lat: 44.8378, lon: -0.5792 },
+            { name: "Bretagne", lat: 48.1173, lon: -1.6778 },
+            { name: "Bourgogne-Franche-Comté", lat: 47.2220, lon: 5.9722 },
+            { name: "Centre-Val de Loire", lat: 47.9027, lon: 1.9090 },
+            { name: "Pays de la Loire", lat: 47.2184, lon: -1.5536 },
+            { name: "Corse", lat: 42.0396, lon: 9.0129 }
+        ];
+
+        function getWeatherIcon(code) {
+            if (code <= 1) return '☀️';
+            if (code <= 3) return '⛅';
+            if (code <= 48) return '☁️';
+            if (code <= 67) return '🌧️';
+            if (code <= 77) return '❄️';
+            if (code <= 82) return '🌧️';
+            if (code <= 86) return '🌨️';
+            return '⛈️';
+        }
+
+        function getWeatherDescription(code) {
+            if (code <= 1) return 'Ciel dégagé';
+            if (code <= 3) return 'Partiellement nuageux';
+            if (code <= 48) return 'Nuageux';
+            if (code <= 67) return 'Pluvieux';
+            if (code <= 77) return 'Neigeux';
+            if (code <= 82) return 'Averses';
+            if (code <= 86) return 'Neige';
+            return 'Orageux';
+        }
+
+        async function fetchWeatherData(lat, lon) {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FParis`;
+            const response = await fetch(url);
+            return await response.json();
+        }
+
+        function getWindDirection(degrees) {
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+            return directions[Math.round(degrees / 45) % 8];
+        }
+
+        async function updateWeather() {
+            const container = document.getElementById('weather-container');
+            container.innerHTML = '';
+
+            for (const region of regions) {
+                try {
+                    const data = await fetchWeatherData(region.lat, region.lon);
+                    const current = data.current;
+                    const temp = Math.round(current.temperature_2m);
+                    const weatherCode = current.weather_code;
+                    const feelsLike = Math.round(current.apparent_temperature);
+                    const humidity = current.relative_humidity_2m;
+                    const windSpeed = Math.round(current.wind_speed_10m * 3.6);  // Convert to km/h
+                    const windDir = getWindDirection(current.wind_direction_10m);
+                    const precipitation = current.precipitation;
+
+                    const regionElement = document.createElement('div');
+                    regionElement.className = 'region-weather';
+                    regionElement.innerHTML = `
+                        <div class="region-name">${region.name}</div>
+                        <div class="weather-main">
+                            <div class="weather-icon">${getWeatherIcon(weatherCode)}</div>
+                            <div class="temperature">${temp}°C</div>
+                        </div>
+                        <div class="description">${getWeatherDescription(weatherCode)}</div>
+                        <div class="weather-details">
+                            <div class="weather-detail"><span class="detail-icon">🌡️</span> Ressenti ${feelsLike}°C</div>
+                            <div class="weather-detail"><span class="detail-icon">💧</span> Humidité ${humidity}%</div>
+                            <div class="weather-detail"><span class="detail-icon">💨</span> Vent ${windSpeed} km/h ${windDir}</div>
+                            <div class="weather-detail"><span class="detail-icon">☔</span> Précip. ${precipitation} mm</div>
+                        </div>
+                    `;
+                    container.appendChild(regionElement);
+                } catch (error) {
+                    console.error(`Erreur pour ${region.name}:`, error);
+                }
+            }
+
+            document.getElementById('last-updated').textContent = `Dernière mise à jour : ${new Date().toLocaleTimeString('fr-FR')}`;
+        }
+
+        updateWeather();
+        // Mise à jour toutes les 15 minutes
+        setInterval(updateWeather, 900000);
+    </script>
+</body>
+</html>
